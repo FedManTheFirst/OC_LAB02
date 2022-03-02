@@ -3,6 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Diagnostics;
+using System.Text;
 
 public class OC_LAB02
 {
@@ -53,7 +54,7 @@ public class OC_LAB02
                 goto mark;
             case "3":
                 // удаление файла
-                Delet();
+                Delete();
                 goto mark;
             default:
                 break;
@@ -103,8 +104,13 @@ public class OC_LAB02
             Console.WriteLine($"Текст из файла: {textFromFile}");
         }
     }
+    static void Input()
+    {
+        Console.WriteLine("Введите хэш:");
+        string hech = Console.ReadLine();
+    }
     // удаление файла
-    static void Delet()
+    static void Delete()
     {
         Console.WriteLine("Название файла:");
         string name = Console.ReadLine();
@@ -136,8 +142,13 @@ public class OC_LAB02
                             // Compute the hash of the fileStream.
                             byte[] hashValue = mySHA256.ComputeHash(fileStream);
                             // Write the name and hash value of the file to the console.
-                            Console.Write($"{fInfo.Name}: ");
-                            PrintByteArray(hashValue);
+                            StringBuilder builder = new StringBuilder();
+                            for (int i = 0; i < hashValue.Length; i++)
+                            {
+                                builder.Append(hashValue[i].ToString("x2"));
+
+                            }
+                            Console.WriteLine($"{fInfo.Name}:{builder.ToString()}");
                         }
                         catch (IOException e)
                         {
@@ -155,16 +166,6 @@ public class OC_LAB02
         {
             Console.WriteLine("The directory specified could not be found.");
         }
-    }
-    // Display the byte array in a readable format.
-    static void PrintByteArray(byte[] array)
-    {
-        for (int i = 0; i < array.Length; i++)
-        {
-            Console.Write($"{array[i]:X2}");
-            if ((i % 4) == 3) Console.Write(" ");
-        }
-        Console.WriteLine();
     }
     //брутфорс
     public static bool BruteForce(string testChars, int startLength, int endLength, BruteForceTest testCallback)
@@ -208,6 +209,7 @@ public class OC_LAB02
 
         return false;
     }
+    //ввод пароля
     static void BrutMain()
     {
     mark:
@@ -233,6 +235,7 @@ public class OC_LAB02
 
 
     }
+    //многопоточность
     static void Theard()
     {
         object locker = new();
@@ -253,12 +256,7 @@ public class OC_LAB02
             lock (locker)
             {
 
-                for (int i = 0; i < 5; i++)
-                {
-                    Thread currentThread = Thread.CurrentThread;
-                    Console.WriteLine($"{Thread.CurrentThread.Name}: {i}");
-
-                }
+                SHA_256();
                 stopWatch.Stop();
                 TimeSpan ts = stopWatch.Elapsed;
                 string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
