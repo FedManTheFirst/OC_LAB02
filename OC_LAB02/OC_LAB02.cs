@@ -5,7 +5,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Text;
 using System.Linq;
-
+//Отдельно создать перед работай файлы с хэшами
 public class OC_LAB02
 {
     #region Private variables
