@@ -4,16 +4,40 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Diagnostics;
 using System.Text;
+using System.Linq;
 
 public class OC_LAB02
 {
-    static string path = @"C:\Documents";
-    public delegate bool BruteForceTest(ref char[] testChars);
+    #region Private variables
+
+    // the secret password which we will try to find via brute force
+    static string password;
+    private static string result1;
+    private static string result2;
+    private static readonly Encoding encoding = Encoding.UTF8;
+    private static string path = @"C:\Documents";
+
+    private static bool isMatched = false;
+
+    /* The length of the charactersToTest Array is stored in a
+     * additional variable to increase performance  */
+    private static int charactersToTestLength = 0;
+    private static long computedKeys = 0;
+
+    /* An array containing the characters which will be used to create the brute force keys,
+     * if less characters are used (e.g. only lower case chars) the faster the password is matched  */
+    private static char[] charactersToTest =
+    {
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+        'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+        'u', 'v', 'w', 'x', 'y', 'z'
+    };
+
+    #endregion
     public static void Main(string[] args)
     {
-
     mark:
-        Console.WriteLine("1-Работа с файлами, 2-хэширование, 3-ломать, 4 многопоточность, 0-выход: ");
+        Console.WriteLine("1-Работа с файлами, 2-брутфорс,: ");
         string choice = Console.ReadLine();
         switch (choice)
         {
@@ -21,16 +45,8 @@ public class OC_LAB02
                 CrateFile();
                 goto mark;
             case "2":
-                SHA_256();
-                goto mark;
-            case "3":
-                BrutMain();
-                goto mark;
-            case "4":
                 Theard();
-                Thread.Sleep(10000);
-                goto mark;
-            case "5":
+                Thread.Sleep(1000000);
                 goto mark;
             default:
                 break;
@@ -54,7 +70,7 @@ public class OC_LAB02
                 goto mark;
             case "3":
                 // удаление файла
-                Delete();
+                Del();
                 goto mark;
             default:
                 break;
@@ -102,15 +118,11 @@ public class OC_LAB02
             // декодируем байты в строку
             string textFromFile = System.Text.Encoding.Default.GetString(array);
             Console.WriteLine($"Текст из файла: {textFromFile}");
+
         }
     }
-    static void Input()
-    {
-        Console.WriteLine("Введите хэш:");
-        string hech = Console.ReadLine();
-    }
     // удаление файла
-    static void Delete()
+    static void Del()
     {
         Console.WriteLine("Название файла:");
         string name = Console.ReadLine();
@@ -118,154 +130,178 @@ public class OC_LAB02
         Console.WriteLine("Файл удалён");
         Console.ReadLine();
     }
-    static void SHA_256()
-    {
-        if (Directory.Exists(path))
-        {
-            // Create a DirectoryInfo object representing the specified directory.
-            var dir = new DirectoryInfo(path);
-            // Get the FileInfo objects for every file in the directory.
-            FileInfo[] files = dir.GetFiles();
-            // Initialize a SHA256 hash object.
-            using (SHA256 mySHA256 = SHA256.Create())
-            {
-                // Compute and print the hash values for each file in directory.
-                foreach (FileInfo fInfo in files)
-                {
-                    using (FileStream fileStream = fInfo.Open(FileMode.Open))
-                    {
-                        try
-                        {
-                            // Create a fileStream for the file.
-                            // Be sure it's positioned to the beginning of the stream.
-                            fileStream.Position = 0;
-                            // Compute the hash of the fileStream.
-                            byte[] hashValue = mySHA256.ComputeHash(fileStream);
-                            // Write the name and hash value of the file to the console.
-                            StringBuilder builder = new StringBuilder();
-                            for (int i = 0; i < hashValue.Length; i++)
-                            {
-                                builder.Append(hashValue[i].ToString("x2"));
 
-                            }
-                            Console.WriteLine($"{fInfo.Name}:{builder.ToString()}");
-                        }
-                        catch (IOException e)
-                        {
-                            Console.WriteLine($"I/O Exception: {e.Message}");
-                        }
-                        catch (UnauthorizedAccessException e)
-                        {
-                            Console.WriteLine($"Access Exception: {e.Message}");
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine("The directory specified could not be found.");
-        }
-    }
     //брутфорс
-    public static bool BruteForce(string testChars, int startLength, int endLength, BruteForceTest testCallback)
-    {
-        for (int len = startLength; len <= endLength; ++len)
-        {
-            char[] chars = new char[len];
-
-            for (int i = 0; i < len; ++i)
-                chars[i] = testChars[0];
-
-            if (testCallback(ref chars))
-                return true;
-
-            for (int i1 = len - 1; i1 > -1; --i1)
-            {
-                int i2 = 0;
-
-                for (i2 = testChars.IndexOf(chars[i1]) + 1; i2 < testChars.Length; ++i2)
-                {
-                    chars[i1] = testChars[i2];
-
-                    if (testCallback(ref chars))
-                        return true;
-
-                    for (int i3 = i1 + 1; i3 < len; ++i3)
-                    {
-                        if (chars[i3] != testChars[testChars.Length - 1])
-                        {
-                            i1 = len;
-                            goto outerBreak;
-                        }
-                    }
-                }
-
-            outerBreak:
-                if (i2 == testChars.Length)
-                    chars[i1] = testChars[0];
-            }
-        }
-
-        return false;
-    }
-    //ввод пароля
-    static void BrutMain()
-    {
-    mark:
-        Console.WriteLine("ввод: ");
-        string choice = Console.ReadLine();
-        if (choice.Length <= 5)
-        {
-            BruteForceTest testCallback = delegate (ref char[] testChars)
-            {
-                var str = new string(testChars);
-                return (str == $"{choice}");//наш пароль от сейфа :)
-            };
-            bool result = BruteForce("abcdefghijklmnopqrstuvwxyz", 1, 5, testCallback);
-            Console.WriteLine(result);
-            Console.ReadKey();
-        }
-        else
-        {
-            Console.WriteLine("Неверный пароль!");
-            goto mark;
-        }
 
 
-
-    }
-    //многопоточность
-    static void Theard()
+    public static void Brutmain()
     {
         object locker = new();
-        Stopwatch stopWatch = new Stopwatch();
+        lock (locker)
+        {
+            Console.WriteLine("1-Хэш из файла, 2-Ввод хэша: ");
+            string hash = Console.ReadLine();
+            switch (hash)
+            {
+                case "1":
+                    Console.WriteLine("Название файла:");
+                    string name = Console.ReadLine();
+                    using (FileStream fstream = File.OpenRead($"{path}\\{name}"))
+                    {
+                        // преобразуем строку в байты
+                        byte[] array = new byte[fstream.Length];
+                        // считываем данные
+                        fstream.Read(array, 0, array.Length);
+                        // декодируем байты в строку
+                        string password = System.Text.Encoding.Default.GetString(array);
+                        Console.WriteLine($"Текст из файла: {password}");
+                    }
+                    break;
+                case "2":
+                    Console.WriteLine("Введите хэш:");
+                    password = Console.ReadLine();
+                    break;
+                default:
+                    break;
+            }
+            var timeStarted = DateTime.Now;
+            Console.WriteLine("Start BruteForce - {0}", timeStarted.ToString());
+
+            // The length of the array is stored permanently during runtime
+            charactersToTestLength = charactersToTest.Length;
+
+            // The length of the password is unknown, so we have to run trough the full search space
+            var estimatedPasswordLength = 0;
+
+            while (!isMatched)
+            {
+                /* The estimated length of the password will be increased and every possible key for this
+                 * key length will be created and compared against the password */
+                estimatedPasswordLength++;
+                startBruteForce(estimatedPasswordLength);
+            }
+
+            Console.WriteLine("Password matched. - {0}", DateTime.Now.ToString());
+            Console.WriteLine("Time passed: {0}s", DateTime.Now.Subtract(timeStarted).TotalSeconds);
+            Console.WriteLine("Resolved password: {0}", result1);
+            Console.WriteLine("Resolved hesh: {0}", result2);
+            Console.WriteLine("Computed keys: {0}", computedKeys);
+        }
+    }
+
+    #region Private methods
+
+    /// <summary>
+    /// Starts the recursive method which will create the keys via brute force
+    /// </summary>
+    /// <param name="keyLength">The length of the key</param>
+    private static void startBruteForce(int keyLength)
+    {
+        var keyChars = createCharArray(keyLength, charactersToTest[0]);
+        // The index of the last character will be stored for slight perfomance improvement
+        var indexOfLastChar = keyLength - 1;
+        createNewKey(0, keyChars, keyLength, indexOfLastChar);
+    }
+
+    /// <summary>
+    /// Creates a new char array of a specific length filled with the defaultChar
+    /// </summary>
+    /// <param name="length">The length of the array</param>
+    /// <param name="defaultChar">The char with whom the array will be filled</param>
+    /// <returns></returns>
+    private static char[] createCharArray(int length, char defaultChar)
+    {
+        return (from c in new char[length] select defaultChar).ToArray();
+    }
+
+    /// <summary>
+    /// This is the main workhorse, it creates new keys and compares them to the password until the password
+    /// is matched or all keys of the current key length have been checked
+    /// </summary>
+    /// <param name="currentCharPosition">The position of the char which is replaced by new characters currently</param>
+    /// <param name="keyChars">The current key represented as char array</param>
+    /// <param name="keyLength">The length of the key</param>
+    /// <param name="indexOfLastChar">The index of the last character of the key</param>
+    private static void createNewKey(int currentCharPosition, char[] keyChars, int keyLength, int indexOfLastChar)
+    {
+        var nextCharPosition = currentCharPosition + 1;
+        // We are looping trough the full length of our charactersToTest array
+        for (int i = 0; i < charactersToTestLength; i++)
+        {
+            /* The character at the currentCharPosition will be replaced by a
+             * new character from the charactersToTest array => a new key combination will be created */
+            keyChars[currentCharPosition] = charactersToTest[i];
+
+            // The method calls itself recursively until all positions of the key char array have been replaced
+            if (currentCharPosition < indexOfLastChar)
+            {
+                createNewKey(nextCharPosition, keyChars, keyLength, indexOfLastChar);
+            }
+            else
+            {
+                // A new key has been created, remove this counter to improve performance
+                computedKeys++;
+
+                /* The char array will be converted to a string and compared to the password. If the password
+                 * is matched the loop breaks and the password is stored as result. */
+                using (SHA256 sha256Hash = SHA256.Create())
+
+                    if (GetHash(sha256Hash, new String(keyChars)) == password)
+                    {
+
+                        using (FileStream fstream = new FileStream($"{path}\\pas{i}.txt", FileMode.OpenOrCreate))
+                        {
+                            // преобразуем строку в байты
+                            byte[] array = System.Text.Encoding.Default.GetBytes(new String(keyChars));
+                            // запись массива байтов в файл
+                            fstream.Write(array, 0, array.Length);
+                            Console.WriteLine("данные записаны в файл");
+                        }
+                        if (!isMatched)
+                        {
+                            isMatched = true;
+                            result1 = new String(keyChars);
+                            result2 = GetHash(sha256Hash, new String(keyChars));
+                        }
+                        return;
+                    }
+
+            }
+        }
+    }
+    private static string GetHash(HashAlgorithm hashAlgorithm, string input)
+    {
+
+        // Convert the input string to a byte array and compute the hash.
+        byte[] data = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(input));
+
+        // Create a new Stringbuilder to collect the bytes
+        // and create a string.
+        var sBuilder = new StringBuilder();
+
+        // Loop through each byte of the hashed data
+        // and format each one as a hexadecimal string.
+        for (int i = 0; i < data.Length; i++)
+        {
+            sBuilder.Append(data[i].ToString("x2"));
+        }
+
+        // Return the hexadecimal string.
+        return sBuilder.ToString();
+    }
+    private static void Theard()
+    {
         Console.WriteLine("Колл-во потоков:");
         int theards = Convert.ToInt32(Console.ReadLine());
-        Console.WriteLine("Дождитесь меню!");
+        Console.WriteLine("Дождитесь!");
         for (int i = 1; i <= theards; i++)
         {
-            stopWatch.Start();
-            Thread myThread = new(Print);
+            Thread myThread = new(Brutmain);
             myThread.Name = $"Поток {i}";   // устанавливаем имя для каждого потока
             myThread.Start();
         }
-        // действия, выполняемые во втором потокке
-        void Print()
-        {
-            lock (locker)
-            {
 
-                SHA_256();
-                stopWatch.Stop();
-                TimeSpan ts = stopWatch.Elapsed;
-                string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
-                ts.Hours, ts.Minutes, ts.Seconds,
-                ts.Milliseconds / 10);
-                Console.WriteLine("RunTime " + elapsedTime);
-            }
-
-        }
     }
-}
 
+    #endregion
+}
