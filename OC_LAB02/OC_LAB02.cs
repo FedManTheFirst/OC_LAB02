@@ -130,15 +130,11 @@ public class OC_LAB02
         Console.WriteLine("Файл удалён");
         Console.ReadLine();
     }
-
     //брутфорс
-
-
     public static void Brutmain()
     {
-        object locker = new();
-        lock (locker)
-        {
+        
+        
             Console.WriteLine("1-Хэш из файла, 2-Ввод хэша: ");
             string hash = Console.ReadLine();
             switch (hash)
@@ -153,8 +149,8 @@ public class OC_LAB02
                         // считываем данные
                         fstream.Read(array, 0, array.Length);
                         // декодируем байты в строку
-                        string password = System.Text.Encoding.Default.GetString(array);
-                        Console.WriteLine($"Текст из файла: {password}");
+                        password = System.Text.Encoding.Default.GetString(array);
+                        Console.WriteLine($"Текст из файла:{password}");
                     }
                     break;
                 case "2":
@@ -186,7 +182,8 @@ public class OC_LAB02
             Console.WriteLine("Resolved password: {0}", result1);
             Console.WriteLine("Resolved hesh: {0}", result2);
             Console.WriteLine("Computed keys: {0}", computedKeys);
-        }
+            Thread.Sleep(1000);
+        
     }
 
     #region Private methods
@@ -244,28 +241,19 @@ public class OC_LAB02
 
                 /* The char array will be converted to a string and compared to the password. If the password
                  * is matched the loop breaks and the password is stored as result. */
-                using (SHA256 sha256Hash = SHA256.Create())
 
-                    if (GetHash(sha256Hash, new String(keyChars)) == password)
-                    {
-
-                        using (FileStream fstream = new FileStream($"{path}\\pas{i}.txt", FileMode.OpenOrCreate))
+                //Console.WriteLine(new String(keyChars));
+                    using (SHA256 sha256Hash = SHA256.Create())
+                        if (GetHash(sha256Hash, new String(keyChars)) == password)
                         {
-                            // преобразуем строку в байты
-                            byte[] array = System.Text.Encoding.Default.GetBytes(new String(keyChars));
-                            // запись массива байтов в файл
-                            fstream.Write(array, 0, array.Length);
-                            Console.WriteLine("данные записаны в файл");
+                            if (!isMatched)
+                            {
+                                isMatched = true;
+                                result1 = new String(keyChars);
+                                result2 = GetHash(sha256Hash, new String(keyChars));
+                            }
+                            return;
                         }
-                        if (!isMatched)
-                        {
-                            isMatched = true;
-                            result1 = new String(keyChars);
-                            result2 = GetHash(sha256Hash, new String(keyChars));
-                        }
-                        return;
-                    }
-
             }
         }
     }
@@ -291,14 +279,19 @@ public class OC_LAB02
     }
     private static void Theard()
     {
+        object locker = new();
         Console.WriteLine("Колл-во потоков:");
         int theards = Convert.ToInt32(Console.ReadLine());
         Console.WriteLine("Дождитесь!");
         for (int i = 1; i <= theards; i++)
         {
-            Thread myThread = new(Brutmain);
-            myThread.Name = $"Поток {i}";   // устанавливаем имя для каждого потока
-            myThread.Start();
+            lock (locker)
+            {
+                Thread myThread = new(Brutmain);
+                myThread.Name = $"Поток {i}";   // устанавливаем имя для каждого потока
+                myThread.Start();
+
+            }
         }
 
     }
