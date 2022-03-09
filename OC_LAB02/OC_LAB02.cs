@@ -15,7 +15,7 @@ public class OC_LAB02
     private static string result1;
     private static string result2;
     private static readonly Encoding encoding = Encoding.UTF8;
-    private static string path = @"C:\Documents";
+    private static string path = @"D:\Documents";
 
     private static bool isMatched = false;
 
@@ -45,8 +45,33 @@ public class OC_LAB02
                 CrateFile();
                 goto mark;
             case "2":
+                Console.WriteLine("1-Хэш из файла, 2-Ввод хэша: ");
+                string hash = Console.ReadLine();
+                switch (hash)
+                {
+                    case "1":
+                        Console.WriteLine("Название файла:");
+                        string name = Console.ReadLine();
+                        using (FileStream fstream = File.OpenRead($"{path}\\{name}"))
+                        {
+                            // преобразуем строку в байты
+                            byte[] array = new byte[fstream.Length];
+                            // считываем данные
+                            fstream.Read(array, 0, array.Length);
+                            // декодируем байты в строку
+                            password = System.Text.Encoding.Default.GetString(array);
+                            Console.WriteLine($"Текст из файла:{password}");
+                        }
+                        break;
+                    case "2":
+                        Console.WriteLine("Введите хэш:");
+                        password = Console.ReadLine();
+                        break;
+                    default:
+                        break;
+                }
                 Theard();
-                Thread.Sleep(1000000);
+                Thread.Sleep(100000);
                 goto mark;
             default:
                 break;
@@ -135,31 +160,7 @@ public class OC_LAB02
     {
         
         
-            Console.WriteLine("1-Хэш из файла, 2-Ввод хэша: ");
-            string hash = Console.ReadLine();
-            switch (hash)
-            {
-                case "1":
-                    Console.WriteLine("Название файла:");
-                    string name = Console.ReadLine();
-                    using (FileStream fstream = File.OpenRead($"{path}\\{name}"))
-                    {
-                        // преобразуем строку в байты
-                        byte[] array = new byte[fstream.Length];
-                        // считываем данные
-                        fstream.Read(array, 0, array.Length);
-                        // декодируем байты в строку
-                        password = System.Text.Encoding.Default.GetString(array);
-                        Console.WriteLine($"Текст из файла:{password}");
-                    }
-                    break;
-                case "2":
-                    Console.WriteLine("Введите хэш:");
-                    password = Console.ReadLine();
-                    break;
-                default:
-                    break;
-            }
+
             var timeStarted = DateTime.Now;
             Console.WriteLine("Start BruteForce - {0}", timeStarted.ToString());
 
@@ -167,13 +168,13 @@ public class OC_LAB02
             charactersToTestLength = charactersToTest.Length;
 
             // The length of the password is unknown, so we have to run trough the full search space
-            var estimatedPasswordLength = 0;
+            var estimatedPasswordLength = 5;
 
             while (!isMatched)
             {
                 /* The estimated length of the password will be increased and every possible key for this
                  * key length will be created and compared against the password */
-                estimatedPasswordLength++;
+                
                 startBruteForce(estimatedPasswordLength);
             }
 
@@ -230,7 +231,7 @@ public class OC_LAB02
             keyChars[currentCharPosition] = charactersToTest[i];
 
             // The method calls itself recursively until all positions of the key char array have been replaced
-            if (currentCharPosition < indexOfLastChar)
+            if ((currentCharPosition < indexOfLastChar) )
             {
                 createNewKey(nextCharPosition, keyChars, keyLength, indexOfLastChar);
             }
@@ -241,16 +242,16 @@ public class OC_LAB02
 
                 /* The char array will be converted to a string and compared to the password. If the password
                  * is matched the loop breaks and the password is stored as result. */
-
                 //Console.WriteLine(new String(keyChars));
                     using (SHA256 sha256Hash = SHA256.Create())
-                        if (GetHash(sha256Hash, new String(keyChars)) == password)
+                        if ((GetHash(sha256Hash, new String(keyChars)) == password)|| (isMatched == true))
                         {
                             if (!isMatched)
                             {
                                 isMatched = true;
                                 result1 = new String(keyChars);
                                 result2 = GetHash(sha256Hash, new String(keyChars));
+                            
                             }
                             return;
                         }
